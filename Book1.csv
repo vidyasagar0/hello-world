@@ -1,5 +1,4 @@
-ID,Field1,Field2,Field3,Field4
-1,provider_id,detail,source,event_time
+provider_id,detail,source,event_time
 2,6873f0af240706d65514ec247c64f330,{u'mme': False},job_responded,2017-09-01 00:00:00.000000
 3,a5a021d997269c4f1846903ff0f5d737,"{u'lat': 18.9810108, u'long': 72.8187476}",location_tracking,2017-09-01 00:00:02.000000
 4,77af6d6d6db530c389ec1014d557a01e,{u'mme': False},decline_request,2017-09-01 00:00:05.000000
