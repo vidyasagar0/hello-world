@@ -1,0 +1,254 @@
+
+# coding: utf-8
+
+# In[161]:
+
+
+import pandas as pd
+import numpy as np
+from datetime import datetime
+
+
+# In[162]:
+
+
+df=pd.read_csv(r"assign.csv")
+
+
+# In[163]:
+
+
+df.head()
+
+
+# In[164]:
+
+
+df.dtypes
+df.shape
+
+
+# In[165]:
+
+
+df['eventtime'] = df['event_time'].apply(lambda x : datetime.strptime(x[:-7],'%Y-%m-%d %H:%M:%S'))
+
+
+# In[166]:
+
+
+df['date'] = df["event_time"].apply(lambda x:x[:10])
+
+
+# In[167]:
+
+
+df['time'] = df['event_time'].apply(lambda x : datetime.strptime(x[11:-7],'%H:%M:%S'))
+
+
+# In[168]:
+
+
+df
+
+
+# In[169]:
+
+
+df1=df[df.time <'1900-01-01 19:00:00']
+
+
+# In[170]:
+
+
+df.shape
+
+
+# In[171]:
+
+
+df['offline']=df["detail"].str.contains('False')
+
+
+# In[172]:
+
+
+df['online'] = (df['detail'].str.contains('True') | df['detail'].str.contains('Action on Job'))
+
+
+# In[173]:
+
+
+df.head()
+
+
+# In[ ]:
+
+
+
+
+
+# In[174]:
+
+
+df1=df.drop(df[(df.offline==False) & (df.online==False)].index)
+
+
+# In[175]:
+
+
+df1
+
+
+# In[ ]:
+
+
+
+
+
+# In[176]:
+
+
+df1.loc[df1.online == True, 'Status'] = 'online'
+
+
+# In[177]:
+
+
+df1.loc[df1.offline == True, 'Status'] = 'offline'
+
+
+# In[178]:
+
+
+df1
+
+
+# In[179]:
+
+
+df1=df1.dropna()
+
+
+# In[180]:
+
+
+def get_status(df1):
+    if df1['time'] <datetime.strptime('1900-01-01 08:00:00','%Y-%m-%d %H:%M:%S'):
+        return datetime.strptime('1900-01-01 08:00:00','%Y-%m-%d %H:%M:%S')
+    elif df1['time'] >=datetime.strptime('1900-01-01 08:00:00','%Y-%m-%d %H:%M:%S'):
+        return df1['time']
+    
+df1['New_time'] = df1.apply(get_status, axis = 1)
+
+
+# In[181]:
+
+
+df1 = df1.sort_values(['provider_id', 'date', "New_time"])
+
+
+# In[182]:
+
+
+df1["offset_status"] = df1["Status"].shift(1)
+
+
+# In[183]:
+
+
+df1["offset_time"] = df1["New_time"].shift(1)
+
+
+# In[184]:
+
+
+df1["offset_date"] = df1["date"].shift(1)
+
+
+# In[185]:
+
+
+df1["offset_pid"] = df1["provider_id"].shift(1)
+
+
+# In[186]:
+
+
+def  online_secs (x):
+    if x["provider_id"] == x["offset_pid"]:
+        if x["date"] == x["offset_date"]:
+            if x["Status"] == x["offset_status"] and x["Status"] == "offline":
+                return datetime.strptime('05:30:00',"%H:%M:%S") - datetime.strptime('05:30:00',"%H:%M:%S") 
+            elif x["Status"] == x["offset_status"] and x["Status"] == "online":
+                return datetime.strptime(str(x["New_time"]),'%Y-%m-%d %H:%M:%S') - datetime.strptime(str(x["offset_time"]),'%Y-%m-%d %H:%M:%S')
+            elif x["Status"] != x["offset_status"] and x["Status"] == "online" and x["offset_status"] == "offline" :
+                return datetime.strptime('05:30:00',"%H:%M:%S") - datetime.strptime('05:30:00',"%H:%M:%S") 
+            elif x["Status"] != x["offset_status"] and x["Status"] == "offline" and x["offset_status"] == "online" :
+                return datetime.strptime(str(x["New_time"]),'%Y-%m-%d %H:%M:%S') - datetime.strptime(str(x["offset_time"]),'%Y-%m-%d %H:%M:%S')
+        else:
+            return datetime.strptime('05:30:00',"%H:%M:%S") - datetime.strptime('05:30:00',"%H:%M:%S") 
+    else:
+        return datetime.strptime('05:30:00',"%H:%M:%S") - datetime.strptime('05:30:00',"%H:%M:%S") 
+
+
+# In[187]:
+
+
+df1["online_secs"] = df1.apply(online_secs, axis = 1)
+
+
+# In[188]:
+
+
+df1["start_time"] = df1.New_time.apply(lambda x:str(x)[11:13])
+df1["end_time"] = df1.New_time.apply(lambda x:int(str(x)[11:13])+1)
+
+
+# In[189]:
+
+
+df_final = df1.groupby(["provider_id", "date", "start_time", "end_time"])["online_secs"].sum()
+
+
+# In[190]:
+
+
+df_final
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
